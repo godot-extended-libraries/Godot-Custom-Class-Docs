@@ -21,8 +21,8 @@ func _init(args := {}) -> void:
 	for arg in args:
 		set(arg, args[arg])
 
-## @params name
-## @returns MethodDocItem
+## @args name
+## @return MethodDocItem
 ## Gets a method document called [code]name[/code].
 func get_method_doc(name: String) -> MethodDocItem:
 	for doc in methods:
@@ -30,8 +30,8 @@ func get_method_doc(name: String) -> MethodDocItem:
 			return doc
 	return null
 
-## @params name
-## @returns PropertyDocItem
+## @args name
+## @return PropertyDocItem
 ## Gets a signal document called [code]name[/code].
 func get_property_doc(name: String) -> PropertyDocItem:
 	for doc in properties:
@@ -39,8 +39,8 @@ func get_property_doc(name: String) -> PropertyDocItem:
 			return doc
 	return null
 
-## @params name
-## @returns SignalDocItem
+## @args name
+## @return SignalDocItem
 ## Gets a signal document called [code]name[/code].
 func get_signal_doc(name: String) -> SignalDocItem:
 	for doc in signals:
@@ -48,8 +48,8 @@ func get_signal_doc(name: String) -> SignalDocItem:
 			return doc
 	return null
 
-## @params name
-## @returns ConstantlDocItem
+## @args name
+## @return ConstantlDocItem
 ## Gets a signal document called [code]name[/code].
 func get_constant_doc(name: String) -> ConstantDocItem:
 	for doc in constants:

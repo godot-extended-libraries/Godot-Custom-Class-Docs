@@ -39,6 +39,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://addons/silicon.util.custom_docs/doc_item/doc_item.gd"
 }, {
+"base": "DocExporter",
+"class": "EditorHelpDocExporter",
+"language": "GDScript",
+"path": "res://addons/silicon.util.custom_docs/doc_exporter/editor_help_doc_exporter.gd"
+}, {
 "base": "DocItem",
 "class": "MethodDocItem",
 "language": "GDScript",
@@ -48,11 +53,6 @@ _global_script_classes=[ {
 "class": "PropertyDocItem",
 "language": "GDScript",
 "path": "res://addons/silicon.util.custom_docs/doc_item/property_doc_item.gd"
-}, {
-"base": "DocExporter",
-"class": "RichLabelDocExporter",
-"language": "GDScript",
-"path": "res://addons/silicon.util.custom_docs/doc_exporter/rich_label_doc_exporter.gd"
 }, {
 "base": "DocItem",
 "class": "SignalDocItem",
@@ -66,9 +66,9 @@ _global_script_class_icons={
 "CustomControlThing": "",
 "DocExporter": "",
 "DocItem": "",
+"EditorHelpDocExporter": "",
 "MethodDocItem": "",
 "PropertyDocItem": "",
-"RichLabelDocExporter": "",
 "SignalDocItem": ""
 }
 

@@ -5,8 +5,8 @@ extends Reference
 class_name DocExporter
 
 ## @virtual
-## @params doc
-## @param-types ClassDocItem
+## @args doc
+## @arg-types ClassDocItem
 ## This function gets called to generate a document string from a [ClassDocItem].
 func _generate(doc: ClassDocItem) -> String:
 	return ""

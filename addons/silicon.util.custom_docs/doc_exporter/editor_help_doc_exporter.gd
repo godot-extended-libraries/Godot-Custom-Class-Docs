@@ -1,11 +1,13 @@
 ## @doc-ignore
 tool
 extends DocExporter
-class_name RichLabelDocExporter
+class_name EditorHelpDocExporter
+
+var plugin: EditorPlugin
 
 var label: RichTextLabel
 var class_docs: Dictionary
-var section_lines: Array
+var section_lines := []
 
 var editor_settings: EditorSettings
 var theme: Theme
@@ -60,7 +62,7 @@ func _generate(doc: ClassDocItem) -> String:
 		
 		while inherits != "":
 			add_type(inherits, "")
-			inherits = get_parent_class(inherits)
+			inherits = plugin.get_parent_class(inherits)
 			
 			if inherits != "":
 				label.add_text(" < ")
@@ -140,14 +142,14 @@ func _generate(doc: ClassDocItem) -> String:
 		label.add_text("\n")
 		
 		for tutorial in doc.tutorials:
-			var link: String = tutorial.link
-			var linktxt: String = link if tutorial.title.empty() else tutorial.title
-			var seppos := linktxt.find("//")
+			var link: String = tutorial
+			var linktxt: String = tutorial
+			var seppos := link.find("//")
 			if seppos != -1:
-				linktxt = link.right(seppos + 2)
+				link = link.right(seppos + 2)
 			
 			label.push_color(symbol_color)
-			label.append_bbcode("[url=" + link + "]" + linktxt + "[/url]")
+			label.append_bbcode("[url=" + linktxt + "]" + link + "[/url]")
 			label.pop()
 			label.add_text("\n")
 		
@@ -873,8 +875,8 @@ func add_text(bbcode: String) -> void:
 		
 		if brk_pos > pos:
 			var text := bbcode.substr(pos, brk_pos - pos)
-			if not code_tag:
-				text = text.replace("\n", "\n\n")
+#			if not code_tag:
+#				text = text.replace("\n", "\n\n")
 			label.add_text(text)
 		
 		if brk_pos == bbcode.length():
@@ -1019,12 +1021,6 @@ func add_text(bbcode: String) -> void:
 		else:
 			label.add_text("[") #ignore
 			pos = brk_pos + 1
-
-
-func get_parent_class(_class: String) -> String:
-	if class_docs.has(_class):
-		return class_docs[_class].base
-	return ClassDB.get_parent_class(_class)
 
 
 func sort_methods(a: Dictionary, b: Dictionary) -> bool:

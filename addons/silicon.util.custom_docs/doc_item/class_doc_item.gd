@@ -5,6 +5,8 @@ extends DocItem
 class_name ClassDocItem
 
 var base := "" ## The base class this class extends from.
+var path := "" ## The file location of this class' script.
+
 var brief := "" ## A brief description of the class.
 var description := "" ## A full description of the class.
 
@@ -15,7 +17,15 @@ var constants := [] ## A list of constant documents, including enumerators.
 
 var tutorials := [] ## A list of tutorials that helps to understand this class.
 
-var contriute_url := "" ## A link to where the user can contribute to the class' documentation.
+## @default ""
+## A link to where the user can contribute to the class' documentation.
+var contriute_url := ""
+
+## @default false
+## Whether the class is a singleton.
+var is_singleton := false
+var icon := "" ## A path to the class icon if any.
+
 
 func _init(args := {}) -> void:
 	for arg in args:
@@ -56,3 +66,7 @@ func get_constant_doc(name: String) -> ConstantDocItem:
 		if doc.name == name:
 			return doc
 	return null
+
+
+func _to_string() -> String:
+	return "[Class doc: " + name + "]"

@@ -24,11 +24,14 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 	var inherits := base
 	var parent_props := []
 	var parent_methods := []
+	var parent_constants := []
 	while inherits != "" and inherits in plugin.class_docs:
 		for prop in plugin.class_docs[inherits].properties:
 			parent_props.append(prop.name)
 		for method in plugin.class_docs[inherits].methods:
 			parent_methods.append(method.name)
+		for constant in plugin.class_docs[inherits].constants:
+			parent_constants.append(constant.name)
 		inherits = plugin.get_parent_class(inherits)
 	
 	for method in script.get_script_method_list():
@@ -57,6 +60,8 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 			}))
 	
 	for constant in script.get_script_constant_map():
+		if constant.begins_with("_") or constant in parent_constants:
+			continue
 		var value = script.get_script_constant_map()[constant]
 		
 		# Check if constant is an enumerator.
@@ -120,6 +125,9 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 				comment_block += line + "\n"
 			
 		elif not comment_block.empty():
+			var doc_item: DocItem
+			
+			# Class document
 			if line.begins_with("extends") or line.begins_with("tool") or line.begins_with("class_name"):
 				if annotations.has("@doc-ignore"):
 					return null
@@ -131,7 +139,9 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 				doc.brief = doc_split[0]
 				if doc_split.size() == 2:
 					doc.description = doc_split[1]
-				
+				doc_item = doc
+			
+			# Method document
 			elif line.find("func ") != -1 and not indented:
 				var regex := RegEx.new()
 				regex.compile("func ([a-zA-Z0-9_]+)")
@@ -140,13 +150,18 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 				
 				if not method_doc and method:
 					method_doc = _create_method_doc(method, script)
-					doc.methods.append(method_doc)
+					if method_doc:
+						doc.methods.append(method_doc)
 				
 				if method_doc:
 					if annotations.has("@args"):
 						var params = annotations["@args"].split(",")
 						for i in min(params.size(), method_doc.args.size()):
 							method_doc.args[i].name = params[i].strip_edges()
+					if annotations.has("@arg-defaults"):
+						var params = annotations["@arg-defaults"].split(",")
+						for i in min(params.size(), method_doc.args.size()):
+							method_doc.args[i].default = params[i].strip_edges().replace(";", ",")
 					if annotations.has("@arg-types"):
 						var params = annotations["@arg-types"].split(",")
 						for i in min(params.size(), method_doc.args.size()):
@@ -161,20 +176,24 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 						method_doc.return_enum = annotations["@return-enum"]
 					method_doc.is_virtual = annotations.has("@virtual")
 					method_doc.description = comment_block
-				
+					doc_item = method_doc
+			
+			# Property document
 			elif line.find("var ") != -1 and not indented:
 				var regex := RegEx.new()
 				regex.compile("var ([a-zA-Z0-9_]+)")
 				var prop := regex.search(line).get_string(1)
 				var prop_doc := doc.get_property_doc(prop)
-				
 				if not prop_doc and prop:
 					prop_doc = _create_property_doc(prop, script)
-					doc.properties.append(prop_doc)
+					if prop_doc:
+						doc.properties.append(prop_doc)
 				
 				if prop_doc:
 					if annotations.has("@type"):
 						prop_doc.type = annotations["@type"]
+					if annotations.has("@default"):
+						prop_doc.default = annotations["@default"]
 					if annotations.has("@enum"):
 						prop_doc.enumeration = annotations["@enum"]
 					if annotations.has("@setter"):
@@ -182,7 +201,9 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 					if annotations.has("@getter"):
 						prop_doc.getter = annotations["@getter"]
 					prop_doc.description = comment_block
-				
+					doc_item = prop_doc
+			
+			# Signal document
 			elif line.find("signal") != -1 and not indented:
 				var regex := RegEx.new()
 				regex.compile("signal ([a-zA-Z0-9_]+)")
@@ -198,7 +219,9 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 						for i in min(params.size(), signal_doc.args.size()):
 							signal_doc.args[i].enumeration = params[i].strip_edges()
 					signal_doc.description = comment_block
-				
+					doc_item = signal_doc
+			
+			# Constant document
 			elif line.find("const") != -1 and not indented:
 				var regex := RegEx.new()
 				regex.compile("const ([a-zA-Z0-9_]+)")
@@ -206,12 +229,22 @@ func generate(name: String, base: String, script_path: String) -> ClassDocItem:
 				var const_doc := doc.get_constant_doc(constant)
 				if const_doc:
 					const_doc.description = comment_block
+					doc_item = const_doc
 			
-			else:
-				for constant in doc.constants:
-					if line.find(constant.name) != -1:
-						constant.description = comment_block
+			# Enumerator document
+			elif enum_block: # Handle enumerators
+				for enum_doc in doc.constants:
+					if line.find(enum_doc.name) != -1:
+						enum_doc.description = comment_block
+						doc_item = enum_doc
 						break
+			
+			# Meta annotations
+			if doc_item:
+				for annote in annotations:
+					if annote.find("@meta-") == 0:
+						var key: String = annote.right("@meta-".length())
+						doc_item.meta[key] = annotations[annote].strip_edges()
 			
 			comment_block = ""
 			annotations.clear()
@@ -227,6 +260,9 @@ func _create_method_doc(name: String, script: Script = null, method := {}) -> Me
 				method = m
 				break
 	
+	if not method.has("name"):
+		return null
+
 	var method_doc := MethodDocItem.new({
 		"name": method.name,
 		"return_type": _type_string(
@@ -253,9 +289,11 @@ func _create_property_doc(name: String, script: Script = null, property := {}) -
 				property = p
 				break
 	
+	if not property.has("name"):
+		return null
+	
 	var property_doc := PropertyDocItem.new({
-		"name": property.name,
-		"default": script.get_property_default_value(property.name),
+		"name": name,
 		"type": _type_string(
 			property.type,
 			property["class_name"]
